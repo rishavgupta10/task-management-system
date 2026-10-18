@@ -15,6 +15,21 @@ describe('Tasks API (Controller & Validation Integration)', () => {
 
   const mockPrismaService = {
     task: {
+      findFirst: jest.fn().mockImplementation(({ where }) => {
+        let items = Array.from(mockTasks.values());
+        if (where?.id) {
+          items = items.filter((t) => t.id === where.id);
+        }
+        if (where?.title) {
+          items = items.filter(
+            (t) =>
+              t.title === where.title &&
+              (!where.status || t.status === where.status) &&
+              (!where.priority || t.priority === where.priority),
+          );
+        }
+        return Promise.resolve(items[0] || null);
+      }),
       create: jest.fn().mockImplementation(({ data }) => {
         const id = 'task-uuid-' + Math.random().toString(36).substring(2, 9);
         const task = {
