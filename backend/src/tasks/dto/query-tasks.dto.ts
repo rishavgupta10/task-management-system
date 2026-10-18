@@ -31,4 +31,8 @@ export class QueryTasksDto {
   @Min(1, { message: 'Limit must be at least 1' })
   @Max(100, { message: 'Limit cannot exceed 100' })
   limit?: number = 10;
+
+  @IsOptional()
+  @IsString()
+  cursor?: string;
 }
