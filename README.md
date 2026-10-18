@@ -7,42 +7,46 @@ A production-ready, enterprise-grade **Task Management System** demonstrating fu
 ## Live Deployment & URLs
 
 * **GitHub Repository:** [https://github.com/rishavgupta10/task-management-system](https://github.com/rishavgupta10/task-management-system)
-* **Live Frontend Web Application:** [https://task-management-system-frontend-gamma.vercel.app](https://task-management-system-frontend-gamma.vercel.app) *(or Vercel / Netlify live URL)*
+* **Live Frontend Web Application:** [https://task-management-system-frontend-gamma.vercel.app](https://task-management-system-frontend-gamma.vercel.app) *(or Render Frontend Web Service URL)*
 * **Deployed Backend API Base:** [https://task-management-api-85r2.onrender.com](https://task-management-api-85r2.onrender.com)
 * **Live Health Check Endpoint:** [https://task-management-api-85r2.onrender.com/health](https://task-management-api-85r2.onrender.com/health)
-* **Hosting Providers:**
-  - **Frontend:** Vercel (Next.js Edge Network)
-  - **Backend API:** Render (Docker Web Service)
-  - **Database:** Supabase / Neon (Managed Cloud PostgreSQL 16)
+* **Hosting Platform:** **Render.com** (All-in-One Infrastructure as Code via `render.yaml`) / Vercel
+  - **Frontend:** Render Web Service (Docker / Next.js) or Vercel Edge
+  - **Backend API:** Render Web Service (Docker / NestJS)
+  - **Database:** Render Managed PostgreSQL 16 (Persistent Cloud Database)
 
 > **Important Note on Free-Tier Cold Starts:**  
-> The backend container is hosted on a free-tier cloud platform (Render). If the service has been inactive, it automatically spins down to save compute. **The first request may take 30–50 seconds to boot the container and connect to the PostgreSQL pool.** Once awake, subsequent requests respond in under 50ms.
+> The backend and database containers are hosted on a free-tier cloud platform (Render). If the service has been inactive for >15 minutes, Render automatically spins down the container to conserve compute. **The first request may take 30–50 seconds to spin up the container and establish the PostgreSQL connection pool.** Once awake, subsequent requests respond instantaneously (<50ms).
 
 ---
 
-### Cloud Deployment & Redeployment Steps:
+### 1-Click All-in-One Deployment via Blueprint (`render.yaml`)
 
-#### 1. Backend & Database (Render / Supabase):
-1. Create a PostgreSQL 16 database on **Supabase** or **Neon**.
-2. Connect Render to the GitHub repository:
-   - Select Docker environment (uses `backend/Dockerfile`).
-   - Root directory: `backend`.
-   - Set environment variables in Render Dashboard:
-     - `DATABASE_URL`: `postgresql://postgres:[PASSWORD]@[HOST]:5432/postgres?sslmode=require`
-     - `PORT`: `4000`
-     - `CORS_ORIGIN`: `https://task-management-system-frontend-gamma.vercel.app`
-     - `NODE_ENV`: `production`
-3. Database migrations and seeds run automatically during container startup:
+The entire stack (Frontend, Backend, and Managed PostgreSQL Database) can be deployed simultaneously to **a single platform (Render)** using the included Infrastructure-as-Code blueprint [`render.yaml`](./render.yaml).
+
+#### How It Works:
+1. **Zero Secrets in Code:** Render automatically wires `DATABASE_URL` directly from the managed PostgreSQL service into the backend container.
+2. **Dynamic CORS Configuration:** Render automatically connects the frontend hostname to the backend's `CORS_ORIGIN` environment variable.
+3. **Automated Migrations & Seeding:** When the backend container boots up, it automatically runs:
    ```bash
    npx prisma db push --skip-generate && node dist/prisma/seed.js && node dist/src/main.js
    ```
+4. **Isolated Private Network:** The database is not exposed publicly without authentication; all internal traffic routes securely through Render's private network.
 
-#### 2. Frontend (Vercel):
-1. Import the repository in **Vercel**.
-2. Set Root Directory to `frontend`.
-3. Configure Environment Variables:
-   - `NEXT_PUBLIC_API_URL`: `https://task-management-api-85r2.onrender.com`
-4. Deploy. Vercel automatically deploys every push to the `main` branch.
+#### Steps to Deploy on Render:
+1. Fork or push this repository to your GitHub account: `https://github.com/rishavgupta10/task-management-system`.
+2. Open [Render Dashboard](https://dashboard.render.com).
+3. Click the **"New +"** button in the top navigation bar and select **"Blueprint"**.
+4. Connect your GitHub repository `rishavgupta10/task-management-system`.
+5. Render reads `render.yaml` and presents an infrastructure plan with 3 interconnected services:
+   - `task-management-db` (PostgreSQL Database)
+   - `task-management-backend` (Web Service)
+   - `task-management-frontend` (Web Service)
+6. Click **"Apply"**. Render provisions the database, builds the Docker containers, sets environment variables, runs migrations/seeds, and provides live URLs!
+
+#### How to Redeploy:
+- **Automatic:** Any new commit pushed to the `main` branch on GitHub automatically triggers a zero-downtime rolling rebuild and redeploy on Render.
+- **Manual:** Navigate to the service on Render Dashboard and click **"Manual Deploy"** -> **"Deploy latest commit"**.
 
 ---
 

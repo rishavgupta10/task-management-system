@@ -1,0 +1,56 @@
+services:
+  # 1. Backend Web Service
+  - type: web
+    name: task-management-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 4000
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: task-management-db
+          property: connectionString
+      - key: CORS_ORIGIN
+        fromService:
+          type: web
+          name: task-management-frontend
+          property: host
+    dockerCommand: >
+      sh -c "npx prisma db push --skip-generate &&
+             node dist/prisma/seed.js &&
+             node dist/src/main.js"
+
+  # 2. Frontend Web Service
+  - type: web
+    name: task-management-frontend
+    runtime: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    plan: free
+    region: oregon
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: task-management-backend
+          property: host
+
+databases:
+  # 3. Managed PostgreSQL Database
+  - name: task-management-db
+    databaseName: task_management
+    user: task_user
+    plan: free
+    region: oregon
+    postgresMajorVersion: 16
