@@ -8,7 +8,24 @@ import {
   ApiErrorResponse,
 } from '../types/task';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+// Dynamic API Base URL resolution:
+// 1. Checks NEXT_PUBLIC_API_URL environment variable
+// 2. If running in browser on Render (*.onrender.com), routes to the live Render backend
+// 3. Otherwise defaults to localhost:4000 for local development
+const getApiBaseUrl = (): string => {
+  if (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost')) {
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, '');
+  }
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname.includes('onrender.com') || hostname.includes('vercel.app')) {
+      return 'https://task-management-backend-4t4j.onrender.com';
+    }
+  }
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // 1. Create configured Axios client instance
 const apiClient: AxiosInstance = axios.create({
@@ -17,6 +34,17 @@ const apiClient: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+});
+
+// Update baseURL dynamically in browser on every request
+apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  if (typeof window !== 'undefined' && config.baseURL?.includes('localhost')) {
+    const liveUrl = getApiBaseUrl();
+    if (!liveUrl.includes('localhost')) {
+      config.baseURL = liveUrl;
+    }
+  }
+  return config;
 });
 
 // 2. Request Interceptor: Attach Idempotency keys, tenant headers, and auth tokens automatically
