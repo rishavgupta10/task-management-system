@@ -7,11 +7,11 @@ A production-ready, enterprise-grade **Task Management System** demonstrating fu
 ## Live Deployment & URLs
 
 * **GitHub Repository:** [https://github.com/rishavgupta10/task-management-system](https://github.com/rishavgupta10/task-management-system)
-* **Live Frontend Web Application:** [https://task-management-system-frontend-gamma.vercel.app](https://task-management-system-frontend-gamma.vercel.app) *(or Render Frontend Web Service URL)*
-* **Deployed Backend API Base:** [https://task-management-api-85r2.onrender.com](https://task-management-api-85r2.onrender.com)
-* **Live Health Check Endpoint:** [https://task-management-api-85r2.onrender.com/health](https://task-management-api-85r2.onrender.com/health)
-* **Hosting Platform:** **Render.com** (All-in-One Infrastructure as Code via `render.yaml`) / Vercel
-  - **Frontend:** Render Web Service (Docker / Next.js) or Vercel Edge
+* **Live Frontend Web Application:** [https://task-management-frontend-j7zs.onrender.com](https://task-management-frontend-j7zs.onrender.com)
+* **Deployed Backend API Base:** [https://task-management-backend-4t4j.onrender.com](https://task-management-backend-4t4j.onrender.com)
+* **Live Health Check Endpoint:** [https://task-management-backend-4t4j.onrender.com/health](https://task-management-backend-4t4j.onrender.com/health)
+* **Hosting Platform:** **Render.com** (All-in-One Infrastructure as Code via `render.yaml`)
+  - **Frontend:** Render Web Service (Docker / Next.js 14)
   - **Backend API:** Render Web Service (Docker / NestJS)
   - **Database:** Render Managed PostgreSQL 16 (Persistent Cloud Database)
 

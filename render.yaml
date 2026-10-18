@@ -18,10 +18,7 @@ services:
           name: task-management-db
           property: connectionString
       - key: CORS_ORIGIN
-        fromService:
-          type: web
-          name: task-management-frontend
-          property: host
+        value: https://task-management-frontend-j7zs.onrender.com,http://localhost:3000
     dockerCommand: >
       sh -c "npx prisma db push --skip-generate &&
              node dist/prisma/seed.js &&
@@ -41,10 +38,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: NEXT_PUBLIC_API_URL
-        fromService:
-          type: web
-          name: task-management-backend
-          property: host
+        value: https://task-management-backend-4t4j.onrender.com
 
 databases:
   # 3. Managed PostgreSQL Database
