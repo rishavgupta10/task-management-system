@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Search, X, SlidersHorizontal } from 'lucide-react';
+import { Search, X, Loader2 } from 'lucide-react';
 import { TaskStatus, TaskPriority } from '../types/task';
 
 interface TaskFiltersProps {
@@ -12,6 +12,7 @@ interface TaskFiltersProps {
   priority: TaskPriority | '';
   onPriorityChange: (priority: TaskPriority | '') => void;
   onReset: () => void;
+  isDebouncing?: boolean;
 }
 
 export function TaskFilters({
@@ -22,24 +23,30 @@ export function TaskFilters({
   priority,
   onPriorityChange,
   onReset,
+  isDebouncing = false,
 }: TaskFiltersProps) {
   const hasActiveFilters = Boolean(search || status || priority);
 
   return (
     <div className="bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-      {/* Search Input */}
+      {/* Search Input with Debounce Loading Indicator */}
       <div className="relative flex-1">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
+        {isDebouncing ? (
+          <Loader2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500 animate-spin" />
+        ) : (
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
+        )}
         <input
           type="text"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Search tasks by title (debounced)..."
+          placeholder="Search tasks by title (400ms debounce to save API calls)..."
           className="w-full pl-10 pr-9 py-2 text-sm bg-slate-50 dark:bg-slate-800/60 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder:text-slate-400"
         />
         {search && (
           <button
             onClick={() => onSearchChange('')}
+            title="Clear search"
             className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
           >
             <X className="w-4 h-4" />

@@ -41,7 +41,8 @@ export default function TasksPage() {
 
   // Filters and search state
   const [searchInput, setSearchInput] = useState('');
-  const debouncedSearch = useDebounce(searchInput, 300);
+  const debouncedSearch = useDebounce(searchInput, 400);
+  const isDebouncing = searchInput !== debouncedSearch;
   const [statusFilter, setStatusFilter] = useState<TaskStatus | ''>('');
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | ''>('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -279,6 +280,7 @@ export default function TasksPage() {
           priority={priorityFilter}
           onPriorityChange={setPriorityFilter}
           onReset={handleClearFilters}
+          isDebouncing={isDebouncing}
         />
 
         {/* Dynamic Display: Loading, Error, Empty, or Table */}
