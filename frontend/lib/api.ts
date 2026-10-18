@@ -78,9 +78,19 @@ export const api = {
     return request<Task>(`/tasks/${id}`);
   },
 
-  createTask: async (payload: CreateTaskPayload): Promise<Task> => {
+  createTask: async (payload: CreateTaskPayload, idempotencyKey?: string): Promise<Task> => {
+    // Generate UUID if not provided so retries automatically reuse the same key
+    const key =
+      idempotencyKey ||
+      (typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : 'idemp-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9));
+
     return request<Task>('/tasks', {
       method: 'POST',
+      headers: {
+        'Idempotency-Key': key,
+      },
       body: JSON.stringify(payload),
     });
   },
