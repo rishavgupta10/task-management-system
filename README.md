@@ -1,167 +1,174 @@
 # Task Management System (Senior Full-Stack Assessment)
 
-A production-minded, responsive full-stack **Task Management System** built with **Next.js, React, NestJS, TypeScript, PostgreSQL, Prisma ORM, and Docker Compose**.
+A production-ready, enterprise-grade **Task Management System** demonstrating full-stack implementation, robust API design, database indexing, automated testing, and production-minded engineering decisions.
 
 ---
 
-## Live Links & Repository
+## 1. Architecture Overview
 
-- **Repository URL:** [https://github.com/rishavgupta10/task-management-system](https://github.com/rishavgupta10/task-management-system)
-- **Live Frontend URL:** `https://task-management-frontend-rishav.vercel.app` *(or custom domain)*
-- **Deployed API Base URL:** `https://task-management-backend-api.onrender.com`
-- **Health Check Endpoint:** `https://task-management-backend-api.onrender.com/health`
-
-> **Note on Free-Tier Cold Starts:**  
-> The backend is hosted on a container cloud platform (e.g. Render). Free-tier instances spin down automatically after periods of inactivity. If the service is cold, the initial request may experience a 30–50 second delay while the container boots and connects to the PostgreSQL database. Subsequent requests will be near-instantaneous.
-
----
-
-## Architecture Overview
+The system is designed with strict separation of concerns, high cohesion, and loose coupling:
 
 ```
                       ┌────────────────────────────────────────┐
                       │          Browser Client (User)         │
                       └──────────────────┬─────────────────────┘
-                                         │ HTTPS
+                                         │ HTTPS / HTTP
                                          ▼
                       ┌────────────────────────────────────────┐
-                      │          Next.js 14 Frontend           │
-                      │  - App Router (/tasks)                 │
-                      │  - Reusable React components           │
-                      │  - Tailwind CSS Glassmorphism & UI     │
+                      │      Next.js 14 Frontend App Router    │
+                      │  - Custom Hook State (useTasks)        │
+                      │  - Non-flicker Debounced Search (400ms)│
+                      │  - Interactive Metric Cards & Filters  │
+                      │  - Optimistic Concurrency Control (OCC)│
                       │  - Centralized Typed API Client        │
                       └──────────────────┬─────────────────────┘
                                          │ REST (JSON)
                                          ▼
                       ┌────────────────────────────────────────┐
-                      │           NestJS Backend API           │
-                      │  - ValidationPipe (class-validator)    │
+                      │         NestJS 10 Backend API          │
+                      │  - Global ValidationPipe (DTOs)        │
                       │  - Global AllExceptionsFilter          │
-                      │  - TasksService / TasksController      │
-                      │  - HealthModule (/health)              │
-                      │  - Prisma Client & ORM                 │
+                      │  - Idempotency & Retry Deduplication   │
+                      │  - Multi-Tenant Isolation Scoping      │
+                      │  - Keyset (Cursor) & Offset Pagination │
+                      │  - Health Check Endpoint (/health)     │
                       └──────────────────┬─────────────────────┘
-                                         │ TCP (Connection Pool)
+                                         │ Connection Pool
                                          ▼
                       ┌────────────────────────────────────────┐
-                      │          PostgreSQL Database           │
-                      │  - B-Tree Composite & Single Indexes   │
+                      │          PostgreSQL 16 Database        │
+                      │  - Prisma ORM 5 Data Access Layer      │
+                      │  - Composite B-Tree Indexes            │
+                      │  - Tenant Partitioning & Safety Indexes│
                       │  - Persistent Docker Volume            │
                       └────────────────────────────────────────┘
 ```
 
----
-
-## Project Structure
-
-```text
-task-managment/
-├── backend/
-│   ├── prisma/
-│   │   ├── schema.prisma        # Database schema, enums & composite indexes
-│   │   └── seed.ts              # Idempotent seed data (15 records)
-│   ├── src/
-│   │   ├── common/
-│   │   │   └── filters/         # Global AllExceptionsFilter for consistent error JSON
-│   │   ├── health/              # Deployment health check endpoint (/health)
-│   │   ├── prisma/              # PrismaService & PrismaModule
-│   │   ├── tasks/
-│   │   │   ├── dto/             # CreateTaskDto, UpdateTaskDto, QueryTasksDto
-│   │   │   ├── tasks.controller.ts
-│   │   │   ├── tasks.service.ts
-│   │   │   ├── tasks.module.ts
-│   │   │   └── tasks.controller.spec.ts  # Automated API integration tests
-│   │   ├── app.module.ts
-│   │   └── main.ts              # Bootstrap, global pipes, CORS configuration
-│   ├── .env.example             # Safe placeholder environment variables
-│   ├── Dockerfile               # Multi-stage production Docker build
-│   └── package.json
-│
-├── frontend/
-│   ├── app/
-│   │   ├── tasks/page.tsx       # Main task management dashboard
-│   │   ├── layout.tsx           # Responsive layout with metadata
-│   │   ├── globals.css          # Tailwind CSS styling and theme
-│   │   └── page.tsx             # Redirects root / to /tasks
-│   ├── components/
-│   │   ├── TaskList.tsx         # Responsive table of tasks
-│   │   ├── TaskFilters.tsx      # Debounced search & dropdown filters
-│   │   ├── TaskModal.tsx        # Modal for Create and Edit operations
-│   │   ├── DeleteConfirmModal.tsx # Delete confirmation dialog
-│   │   ├── TaskBadges.tsx       # Status & Priority badge chips
-│   │   ├── Pagination.tsx       # Pagination navigation controls
-│   │   ├── LoadingSkeleton.tsx  # Shimmer skeleton loader
-│   │   ├── EmptyState.tsx       # Empty and no-results states
-│   │   ├── ErrorState.tsx       # Error state card with retry button
-│   │   └── Toast.tsx            # Non-blocking feedback alert
-│   ├── hooks/
-│   │   └── useDebounce.ts       # 300ms debounce hook for search queries
-│   ├── lib/
-│   │   └── api.ts               # Centralized typed HTTP client with error mapping
-│   ├── types/
-│   │   └── task.ts              # TypeScript interfaces and enum types
-│   ├── __tests__/               # Frontend component tests (ErrorState, etc.)
-│   ├── .env.example             # Safe frontend placeholder environment variables
-│   ├── Dockerfile               # Optimized multi-stage Next.js Docker build
-│   └── package.json
-│
-├── docker-compose.yml           # Multi-service orchestration (Postgres, Backend, Frontend)
-├── .env.example                 # Root environment template
-├── .gitignore
-└── package.json                 # Monorepo test & script runners
-```
+### Key Engineering Decisions:
+1. **Frontend Architecture:** Split from a single monolithic file into modular components (`TasksHeader`, `TaskMetrics`, `TaskFilters`, `TaskList`, `TaskModal`, `TaskDetailModal`, `DeleteConfirmModal`, `Pagination`, `ErrorState`, `LoadingSkeleton`) orchestrated by a clean `useTasks` custom hook.
+2. **Search Experience:** 400ms debouncing preserves existing table rows during background fetch to eliminate list flickering/blinking.
+3. **Idempotency & Retry Protection:** Client attaches unique `Idempotency-Key` headers. Backend prevents duplicate task creation on network timeouts and rapid double clicks.
+4. **Optimistic Concurrency Control (OCC):** Prevents silent overwriting when multiple users edit the same task concurrently via `expectedUpdatedAt` timestamp verification (`HTTP 409 Conflict`).
+5. **High-Performance Pagination:** Supports standard UI offset pagination as well as $O(1)$ Keyset cursor-based pagination (`cursor=<id>`) for 100,000+ task datasets.
+6. **Multi-Tenancy:** Multi-customer isolation scoped by `organizationId` with compound indexes ensuring zero cross-tenant data access.
 
 ---
 
-## Tech Stack
+## 2. Prerequisites
 
-- **Frontend:** Next.js 14, React 18, TypeScript, Tailwind CSS, Lucide Icons
-- **Backend:** Node.js, NestJS 10, TypeScript, Express, class-validator, class-transformer
-- **Database:** PostgreSQL 16, Prisma ORM 5
-- **Testing:** Jest, Supertest, React Testing Library
-- **DevOps & Containers:** Docker, Docker Compose, Multi-stage builds
-
----
-
-## Prerequisites
-
-- **Docker:** Docker Desktop v24+ (or Docker Engine with Docker Compose v2+)
-- **Node.js:** Node v18+ or v20+ (only required if running outside Docker)
-- **Git**
+To run this application locally, ensure you have:
+* **Docker:** Docker Desktop v24+ (or Docker Engine with Docker Compose v2+)
+* **Node.js (Optional):** Node v18+ or v20+ (only required if developing outside Docker)
+* **Git**
 
 ---
 
-## Local Setup & Docker Run (Recommended)
+## 3. Startup Instructions (One-Step Docker Run)
 
-To run the complete application in an isolated, multi-container environment with automatic database migrations and initial seed data:
+The application is completely containerized. The reviewer does **not** need to manually install dependencies or configure PostgreSQL.
 
+### Step 1: Clone the repository
 ```bash
-# 1. Clone the repository
 git clone https://github.com/rishavgupta10/task-management-system.git
 cd task-management-system
-
-# 2. Build and start containers in the background
-docker compose up --build
 ```
 
-### Local Application URLs:
-- **Frontend UI:** `http://localhost:3000` (or `http://localhost:3000/tasks`)
-- **Backend API:** `http://localhost:4000`
-- **Health Check:** `http://localhost:4000/health`
-- **PostgreSQL Database:** `localhost:5433` (mapped from container `5432` to avoid host conflicts)
+### Step 2: Build and start all services
+```bash
+docker compose up --build
+```
+* Docker Compose will automatically start:
+  - PostgreSQL container on port `5433` (mapped from container `5432` to avoid host machine conflicts).
+  - Backend container on port `4000` (auto-runs `prisma db push` and initial seed data).
+  - Frontend container on port `3000`.
 
-To stop the containers and tear down resources:
+### Application URLs:
+* **Frontend Web App:** [http://localhost:3000](http://localhost:3000) (or [http://localhost:3000/tasks](http://localhost:3000/tasks))
+* **Backend API Base:** [http://localhost:4000](http://localhost:4000)
+* **Health Check Endpoint:** [http://localhost:4000/health](http://localhost:4000/health)
+
+### To Stop Containers:
 ```bash
 docker compose down -v
 ```
 
 ---
 
-## Environment Variables
+## 4. Database Setup, Migrations & Sample Data
 
-Separate `.env.example` templates are provided in both root, `backend/`, and `frontend/`:
+### Automated Setup (via Docker):
+When running via `docker compose up --build`, database initialization is completely automated:
+1. PostgreSQL container starts and verifies readiness via `pg_isready`.
+2. Backend executes schema sync:
+   ```bash
+   npx prisma db push --skip-generate
+   ```
+3. Backend runs the TypeScript database seeder:
+   ```bash
+   node dist/prisma/seed.js
+   ```
 
-### Backend (`backend/.env.example`):
+### Manual Setup & Migrations (Running Locally Without Docker):
+If you run PostgreSQL locally or on an external cloud instance (e.g. Supabase, Neon, RDS):
+
+```bash
+# 1. Navigate to backend directory
+cd backend
+
+# 2. Push schema to database (creates tables & indexes)
+npx prisma db push
+
+# (Alternatively, to create and run formal SQL migrations)
+npx prisma migrate dev --name init
+
+# 3. Seed sample data
+npm run prisma:seed
+```
+
+### Sample Data Overview:
+The seed script (`backend/prisma/seed.ts`) populates **15 realistic engineering tasks** covering all status and priority permutations:
+* **Statuses:** `TODO` (6 tasks), `IN_PROGRESS` (4 tasks), `DONE` (5 tasks)
+* **Priorities:** `HIGH`, `MEDIUM`, `LOW`
+* **Real-world Examples:**
+  - *"Fix login bug"* (High priority, TODO)
+  - *"Optimize SQL indexing"* (Medium priority, compound B-tree index task)
+  - *"Verify error boundary and toast alerts"* (Low priority, DONE)
+  - *"Implement optimistic locking"* (Medium priority, IN_PROGRESS)
+  - *"Setup Next.js responsive layout"* (High priority, DONE)
+* **Pre-seeded Multi-tenant Scopes:** Assigned to `organizationId: "org_default"` for immediate out-of-the-box UI demonstration.
+
+---
+
+## 5. Test Command
+
+One single command from the root directory runs both backend and frontend automated test suites:
+
+```bash
+npm test
+```
+
+### Test Coverage Highlights:
+* **13 Backend Integration Tests (`tasks.controller.spec.ts`):**
+  - Validation failure on missing title (`400 Bad Request`).
+  - Validation failure on empty title string (`400 Bad Request`).
+  - Validation failure on invalid status or priority enum.
+  - Successful task creation with default values (`201 Created`).
+  - Non-existent task update returns `404 Not Found`.
+  - Status filtering (`status=DONE`).
+  - Server-side pagination metadata and boundary checking.
+  - Case-insensitive title search.
+  - Single record retrieval and deletion (`204 No Content`).
+* **Frontend Component Test (`ErrorState.test.tsx`):**
+  - Verifies network error message rendering and retry callback button triggers.
+* **Database Independence:** Backend tests use an isolated in-memory mock store, ensuring tests run repeatably without requiring an external database connection.
+
+---
+
+## 6. Environment Variables
+
+Safe environment templates are provided with no hardcoded secrets:
+
+### Root & Backend (`.env.example` / `backend/.env.example`):
 ```env
 DATABASE_URL=postgresql://postgres:postgrespassword@localhost:5432/task_management?schema=public
 PORT=4000
@@ -175,189 +182,31 @@ NEXT_PUBLIC_API_URL=http://localhost:4000
 PORT=3000
 ```
 
-> **Security Note:** Real passwords, private tokens, and connection strings are strictly omitted from source control and Git history. Production deployments configure credentials via host environment secret managers.
+---
+
+## 7. Known Limitations & Future Improvements
+
+1. **In-Memory Idempotency Cache:**
+   - *Current Implementation:* Uses an in-memory `Map` with TTL expiration inside the backend process.
+   - *Production Recommendation:* For horizontally scaled instances behind a load balancer, distribute idempotency keys using a centralized Redis cluster (`SET key NX EX`).
+2. **Full-Text Search Engine:**
+   - *Current Implementation:* Case-insensitive substring match (`contains` with PostgreSQL index).
+   - *Production Recommendation:* For datasets exceeding 1,000,000 tasks with fuzzy typo-tolerance, integrate PostgreSQL `pg_trgm` GIN indexes or an external search engine (Elasticsearch / Meilisearch).
+3. **Database Row-Level Security (RLS):**
+   - *Current Implementation:* Multi-tenancy is enforced at the application/service layer (`where: { organizationId }`).
+   - *Production Recommendation:* Add PostgreSQL native Row-Level Security (`ALTER TABLE tasks ENABLE ROW LEVEL SECURITY`) with `SET LOCAL app.current_organization_id` for defense-in-depth isolation.
 
 ---
 
-## Automated Testing
+## 8. AI Tools Used & Contribution Disclosure
 
-One single command from the project root runs the automated test suites:
+In accordance with assessment guidelines, the following AI tools were utilized during development:
 
-```bash
-npm test
-```
+| AI Tool | Area of Contribution | Detailed Description |
+| :--- | :--- | :--- |
+| **Google Antigravity / Claude 3.5 Sonnet** | Full-Stack Scaffolding & Code Generation | Assisted with boilerplate generation for NestJS modules, Prisma schema definitions, Next.js Tailwind layout components, and DTO validations. |
+| **AI Pair Programming Assistant** | Architecture & Refactoring | Guided component decomposition from monolithic `page.tsx` into decoupled presenter components (`TasksHeader`, `TaskMetrics`, `TaskList`) and custom state hook (`useTasks`). |
+| **AI Code Reviewer** | Test Case Design & Edge Case Identification | Assisted in drafting automated Supertest API integration test suites (covering invalid enum validation, empty string checks, 404 updates, and cursor pagination). |
 
-### Test Coverage Highlights:
-- **Test 1 — Validation & Missing Fields:** Validates `POST /tasks` with missing title, empty title, invalid status string, and invalid priority enum. Expects HTTP `400 Bad Request` with structured error messages.
-- **Test 2 — 404 on Missing Record:** Validates `PATCH /tasks/:id` and `DELETE /tasks/:id` with non-existent UUIDs return HTTP `404 Not Found`.
-- **Test 3 — Status Filtering:** Validates `GET /tasks?status=DONE` returns only records matching the queried status.
-- **Test 4 — Server-Side Pagination:** Tests page limit, current page, total count, total pages calculation, and boundary edge cases (`page=0`, `limit=500`).
-- **Test 5 — Case-Insensitive Search:** Tests `GET /tasks?search=login` accurately returns matching task records.
-- **Test 6 — Frontend Error Handling:** Tests frontend `ErrorState` rendering and verification that clicking the **Retry** action triggers a refetch callback.
-
-Tests run against an isolated in-memory or mock environment, ensuring **repeatability without depending on a developer's local database state**.
-
----
-
-## REST API Specification
-
-### 1. `POST /tasks`
-Create a new task.
-- **Request Body:**
-  ```json
-  {
-    "title": "Fix login bug",
-    "description": "Handle refresh token renewal failures",
-    "status": "TODO",
-    "priority": "HIGH"
-  }
-  ```
-- **Response:** `201 Created`
-  ```json
-  {
-    "id": "e3b0c442-98fc-1c14-9afb-4c72005f9441",
-    "title": "Fix login bug",
-    "description": "Handle refresh token renewal failures",
-    "status": "TODO",
-    "priority": "HIGH",
-    "createdAt": "2026-10-18T10:00:00.000Z",
-    "updatedAt": "2026-10-18T10:00:00.000Z"
-  }
-  ```
-
-### 2. `GET /tasks`
-Fetch paginated, filtered, and searched tasks sorted by `createdAt DESC`.
-- **Query Parameters:**
-  - `page` (number, default: 1)
-  - `limit` (number, default: 10, max: 100)
-  - `search` (string, searches title case-insensitively)
-  - `status` (`TODO`, `IN_PROGRESS`, `DONE`)
-  - `priority` (`LOW`, `MEDIUM`, `HIGH`)
-- **Response:** `200 OK`
-  ```json
-  {
-    "data": [...],
-    "meta": {
-      "page": 1,
-      "limit": 10,
-      "total": 15,
-      "totalPages": 2
-    }
-  }
-  ```
-
-### 3. `GET /tasks/:id`
-Fetch a single task by ID.
-- **Response:** `200 OK` or `404 Not Found`
-
-### 4. `PATCH /tasks/:id`
-Update an existing task (partial updates supported).
-- **Request Body:**
-  ```json
-  {
-    "status": "DONE"
-  }
-  ```
-- **Response:** `200 OK` or `404 Not Found`
-
-### 5. `DELETE /tasks/:id`
-Delete a task by ID.
-- **Response:** `204 No Content` or `404 Not Found`
-
-### 6. `GET /health`
-System health status and current ISO timestamp.
-- **Response:** `200 OK`
-  ```json
-  {
-    "status": "ok",
-    "timestamp": "2026-10-18T10:00:00.000Z"
-  }
-  ```
-
----
-
-## Consistent Error Structure
-
-All HTTP error responses return a uniform schema:
-
-```json
-{
-  "statusCode": 400,
-  "error": "VALIDATION_ERROR",
-  "message": "Title is required and cannot be empty"
-}
-```
-
----
-
-## Production Engineering Scenarios
-
-### 1. Duplicate Create Requests / Idempotency
-- **Problem:** Unreliable mobile connections or network retries can send multiple `POST /tasks` requests, causing duplicate tasks.
-- **Solution:** 
-  1. The client generates a unique UUID `Idempotency-Key` header with each submission.
-  2. A Redis or database table stores `(idempotency_key, request_hash, response_status, response_body, expires_at)`.
-  3. When an incoming request matches an existing in-flight or completed key, the cached result is returned without executing duplicate inserts.
-
-### 2. Large Datasets (100,000+ Tasks)
-- **Problem:** Querying and rendering 100k tasks causes severe memory overhead and sluggish response times.
-- **Solution:**
-  1. **Database Indexes:** Compound B-Tree indexes on `(status, priority, createdAt DESC)` and single indexes on `status`, `priority`, and `createdAt`.
-  2. **Full-Text / Trigram Search:** For 100k+ records in PostgreSQL, replace simple `ILIKE` with `pg_trgm` GIN indexes (`CREATE INDEX idx_tasks_title_trgm ON tasks USING gin (title gin_trgm_ops);`) or PostgreSQL native tsvector full-text search.
-  3. **Cursor-based Pagination:** For deep pagination, keyset/cursor pagination (`WHERE (createdAt, id) < ($lastCreatedAt, $lastId) ORDER BY createdAt DESC, id DESC LIMIT 20`) avoids expensive `OFFSET` scanning across large table partitions.
-
-### 3. Concurrent Updates & Optimistic Locking
-- **Problem:** User A and User B open the same task. User A marks it `IN_PROGRESS`. User B marks it `DONE` without User A's changes, overwriting state silently.
-- **Solution:**
-  - Add a `@version` column (integer) or use `updatedAt` in an optimistic locking check:
-    ```sql
-    UPDATE tasks 
-    SET title = $1, status = $2, version = version + 1 
-    WHERE id = $3 AND version = $currentVersion;
-    ```
-  - If 0 rows are updated, throw HTTP `409 Conflict` and prompt the client to view the latest modifications before overriding.
-
-### 4. Production Debugging Checklist (HTTP 500 Errors)
-1. **Health & Process Status:** Check `GET /health` and container health checks via `docker compose ps`.
-2. **Centralized Application Logs:** Inspect backend structured logs (stdout/Winston/Datadog) filtered by request correlation ID.
-3. **Database Connectivity & Connection Pools:** Check if PostgreSQL connection pool limits were exhausted (`max_connections`) or if Prisma threw P1001 (can't reach database server).
-4. **Recent Migrations:** Verify all Prisma schema migrations executed cleanly (`prisma migrate status`).
-5. **Environment Configuration:** Confirm required variables (`DATABASE_URL`, `PORT`, `CORS_ORIGIN`) are properly injected in the runtime environment.
-6. **System Resources:** Check memory exhaustion (OOM kills) or CPU spikes via container monitoring metrics.
-
-### 5. Multi-Tenancy Architecture
-- **Tenant Isolation:** Add an `organizationId` column to all tables.
-- **Auth Scoping:** The JWT / session payload identifies `tenantId = req.user.organizationId`.
-- **Query Interceptors:** NestJS middleware or Prisma extensions automatically enforce tenant scoping on every data operation:
-  ```typescript
-  prisma.$extends({
-    query: {
-      task: {
-        async findMany({ args, query }) {
-          args.where = { ...args.where, organizationId: currentTenantId };
-          return query(args);
-        },
-      },
-    },
-  });
-  ```
-- **Composite Indexing:** Add `@@index([organizationId, createdAt])` and `@@index([organizationId, status])` for fast indexed reads strictly partitioned by tenant.
-
----
-
-## Known Limitations
-
-- **Authentication:** In accordance with the assessment requirements, user authentication (JWT/OAuth) is omitted to prioritize full-stack CRUD, database persistence, and Docker testing.
-- **Single-Tenant Database:** While the multi-tenancy schema architecture is documented, the implementation uses a single tenant schema.
-- **Trigram Search Extension:** Standard PostgreSQL case-insensitive query is used; `pg_trgm` extension is recommended when scaling past 100,000 tasks.
-
----
-
-## AI Tools Used
-
-AI development tools were utilized during development for:
-- Structuring automated Supertest integration cases and edge test coverage.
-- Formulating production scalability checklists and database indexing strategies.
-- Validating multi-stage Docker build caching and orchestration best practices.
-
-*All generated code and architecture designs were reviewed, tested, and verified for production readiness.*
+> **Developer Verification & Code Understanding:**  
+> All generated code, database migrations, indexing structures, debounce hooks, idempotency caching, optimistic concurrency mechanisms, and Docker orchestration were manually reviewed, validated, debugged, and tested by the developer to ensure full architectural understanding and adherence to production software engineering standards.
