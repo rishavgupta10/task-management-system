@@ -13,16 +13,23 @@ import {
 // 2. If running in browser on Render (*.onrender.com), routes to the live Render backend
 // 3. Otherwise defaults to localhost:4000 for local development
 const getApiBaseUrl = (): string => {
-  if (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost')) {
-    return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, '');
+  // If explicitly provided via environment
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (envUrl && !envUrl.includes('localhost') && envUrl.startsWith('http')) {
+    return envUrl.replace(/\/$/, '');
   }
+  // When running inside a browser on deployed environments
   if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    if (hostname.includes('onrender.com') || hostname.includes('vercel.app')) {
+    const host = window.location.hostname;
+    if (host.includes('onrender.com') || host.includes('vercel.app')) {
       return 'https://task-management-backend-4t4j.onrender.com';
     }
   }
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  // If envUrl is just a hostname without http/https (e.g. from Render fromService)
+  if (envUrl && !envUrl.startsWith('http')) {
+    return `https://${envUrl.replace(/\/$/, '')}`;
+  }
+  return envUrl || 'http://localhost:4000';
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -38,12 +45,8 @@ const apiClient: AxiosInstance = axios.create({
 
 // Update baseURL dynamically in browser on every request
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  if (typeof window !== 'undefined' && config.baseURL?.includes('localhost')) {
-    const liveUrl = getApiBaseUrl();
-    if (!liveUrl.includes('localhost')) {
-      config.baseURL = liveUrl;
-    }
-  }
+  const resolvedUrl = getApiBaseUrl();
+  config.baseURL = resolvedUrl;
   return config;
 });
 
