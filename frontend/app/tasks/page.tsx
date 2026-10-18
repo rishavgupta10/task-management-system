@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { api, ApiError } from '../../lib/api';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { api } from '../../lib/api';
 import {
   Task,
   PaginationMeta,
@@ -14,12 +14,20 @@ import { TaskList } from '../../components/TaskList';
 import { TaskFilters } from '../../components/TaskFilters';
 import { Pagination } from '../../components/Pagination';
 import { TaskModal } from '../../components/TaskModal';
+import { TaskDetailModal } from '../../components/TaskDetailModal';
 import { DeleteConfirmModal } from '../../components/DeleteConfirmModal';
 import { LoadingSkeleton } from '../../components/LoadingSkeleton';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorState } from '../../components/ErrorState';
 import { Toast } from '../../components/Toast';
-import { Plus, CheckSquare } from 'lucide-react';
+import {
+  Plus,
+  CheckSquare,
+  ListTodo,
+  Clock,
+  CheckCircle2,
+  TrendingUp,
+} from 'lucide-react';
 
 export default function TasksPage() {
   // State for list and metadata
@@ -45,6 +53,9 @@ export default function TasksPage() {
   // Modals state
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [taskToView, setTaskToView] = useState<Task | null>(null);
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
@@ -93,6 +104,14 @@ export default function TasksPage() {
     fetchTasks();
   }, [fetchTasks]);
 
+  // Calculate quick metrics for current view
+  const metrics = useMemo(() => {
+    const todo = tasks.filter((t) => t.status === 'TODO').length;
+    const inProgress = tasks.filter((t) => t.status === 'IN_PROGRESS').length;
+    const done = tasks.filter((t) => t.status === 'DONE').length;
+    return { todo, inProgress, done, total: meta.total };
+  }, [tasks, meta.total]);
+
   // Create / Update task handler
   const handleSaveTask = async (data: CreateTaskPayload) => {
     if (taskToEdit) {
@@ -131,39 +150,126 @@ export default function TasksPage() {
   const hasActiveFilters = Boolean(searchInput || statusFilter || priorityFilter);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col font-sans transition-colors">
       {/* Top Navbar */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30">
+      <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 sticky top-0 z-30 transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-sm shadow-indigo-200">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/25">
               <CheckSquare className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-slate-900 tracking-tight leading-tight">
-                TaskFlow
-              </h1>
-              <p className="text-xs text-slate-500 font-medium">
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
+                  TaskFlow
+                </h1>
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60">
+                  Pro
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                 Production Task Management
               </p>
             </div>
           </div>
 
-          <button
-            onClick={() => {
-              setTaskToEdit(null);
-              setIsTaskModalOpen(true);
-            }}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-all shadow-indigo-100 hover:shadow-indigo-200 active:scale-95"
-          >
-            <Plus className="w-4 h-4" />
-            <span>New Task</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                setTaskToEdit(null);
+                setIsTaskModalOpen(true);
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 rounded-xl shadow-md shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all active:scale-95"
+            >
+              <Plus className="w-4 h-4" />
+              <span>New Task</span>
+            </button>
+          </div>
         </div>
       </header>
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        {/* Metric Cards Banner */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                Total Tasks
+              </span>
+              <span className="text-xl font-bold text-slate-900 dark:text-white">
+                {metrics.total}
+              </span>
+            </div>
+          </div>
+
+          <div
+            onClick={() => setStatusFilter(statusFilter === 'TODO' ? '' : 'TODO')}
+            className={`p-4 rounded-2xl border shadow-xs flex items-center gap-3.5 cursor-pointer transition-all ${
+              statusFilter === 'TODO'
+                ? 'bg-slate-100 dark:bg-slate-800 border-slate-400'
+                : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-slate-300'
+            }`}
+          >
+            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center flex-shrink-0">
+              <ListTodo className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                To Do
+              </span>
+              <span className="text-xl font-bold text-slate-900 dark:text-white">
+                {metrics.todo}
+              </span>
+            </div>
+          </div>
+
+          <div
+            onClick={() => setStatusFilter(statusFilter === 'IN_PROGRESS' ? '' : 'IN_PROGRESS')}
+            className={`p-4 rounded-2xl border shadow-xs flex items-center gap-3.5 cursor-pointer transition-all ${
+              statusFilter === 'IN_PROGRESS'
+                ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-400'
+                : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-blue-200'
+            }`}
+          >
+            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                In Progress
+              </span>
+              <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                {metrics.inProgress}
+              </span>
+            </div>
+          </div>
+
+          <div
+            onClick={() => setStatusFilter(statusFilter === 'DONE' ? '' : 'DONE')}
+            className={`p-4 rounded-2xl border shadow-xs flex items-center gap-3.5 cursor-pointer transition-all ${
+              statusFilter === 'DONE'
+                ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-400'
+                : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-emerald-200'
+            }`}
+          >
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                Completed
+              </span>
+              <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                {metrics.done}
+              </span>
+            </div>
+          </div>
+        </div>
+
         {/* Filters and Search Bar */}
         <TaskFilters
           search={searchInput}
@@ -193,6 +299,10 @@ export default function TasksPage() {
           <div className="space-y-4">
             <TaskList
               tasks={tasks}
+              onView={(task) => {
+                setTaskToView(task);
+                setIsDetailModalOpen(true);
+              }}
               onEdit={(task) => {
                 setTaskToEdit(task);
                 setIsTaskModalOpen(true);
@@ -223,6 +333,24 @@ export default function TasksPage() {
         }}
         onSubmit={handleSaveTask}
         taskToEdit={taskToEdit}
+      />
+
+      {/* Task Full Detail View Modal */}
+      <TaskDetailModal
+        task={taskToView}
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setTaskToView(null);
+        }}
+        onEdit={(task) => {
+          setTaskToEdit(task);
+          setIsTaskModalOpen(true);
+        }}
+        onDelete={(task) => {
+          setTaskToDelete(task);
+          setIsDeleteModalOpen(true);
+        }}
       />
 
       {/* Delete Confirmation Modal */}

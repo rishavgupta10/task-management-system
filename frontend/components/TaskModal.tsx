@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Task, CreateTaskPayload, TaskStatus, TaskPriority } from '../types/task';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, Sparkles, AlertCircle, AlignLeft, Flag, CheckCircle } from 'lucide-react';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -71,105 +71,165 @@ export function TaskModal({
     }
   };
 
+  const statusOptions: { value: TaskStatus; label: string; desc: string }[] = [
+    { value: 'TODO', label: 'To Do', desc: 'Ready to be picked up' },
+    { value: 'IN_PROGRESS', label: 'In Progress', desc: 'Currently being worked on' },
+    { value: 'DONE', label: 'Done', desc: 'Completed and verified' },
+  ];
+
+  const priorityOptions: { value: TaskPriority; label: string; color: string }[] = [
+    { value: 'LOW', label: 'Low', color: 'border-slate-300 dark:border-slate-600' },
+    { value: 'MEDIUM', label: 'Medium', color: 'border-amber-400 dark:border-amber-600' },
+    { value: 'HIGH', label: 'High', color: 'border-rose-500 dark:border-rose-600' },
+  ];
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg border border-slate-100 overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-          <h2 className="text-lg font-semibold text-slate-800">
-            {taskToEdit ? 'Edit Task' : 'Create New Task'}
-          </h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-xl border border-slate-200 dark:border-slate-800 overflow-hidden transform transition-all animate-in zoom-in-95 duration-200">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                {taskToEdit ? 'Edit Task' : 'Create New Task'}
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {taskToEdit ? 'Update task properties and progress' : 'Fill in the information below to add a new task'}
+              </p>
+            </div>
+          </div>
           <button
             onClick={onClose}
             disabled={loading}
-            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        {/* Form Body */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
           {validationError && (
-            <div className="p-3 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-lg">
-              {validationError}
+            <div className="flex items-start gap-3 p-3.5 text-sm text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-xl">
+              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              <span>{validationError}</span>
             </div>
           )}
 
+          {/* Title */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Title <span className="text-rose-500">*</span>
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                Task Title <span className="text-rose-500">*</span>
+              </label>
+              <span className={`text-xs ${title.length > 200 ? 'text-rose-500 font-bold' : 'text-slate-400'}`}>
+                {title.length}/200
+              </span>
+            </div>
             <input
               type="text"
               required
               disabled={loading}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g., Fix login bug"
-              className="w-full px-3.5 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors"
+              placeholder="e.g. Implement user authentication & JWT refresh"
+              className="w-full px-4 py-2.5 text-sm bg-white dark:bg-slate-800/80 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all shadow-xs"
             />
           </div>
 
+          {/* Description */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Description
-            </label>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <AlignLeft className="w-3.5 h-3.5 text-slate-400" />
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                Description <span className="text-slate-400 font-normal lowercase">(optional)</span>
+              </label>
+            </div>
             <textarea
               rows={3}
               disabled={loading}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Provide additional details or reproduction steps..."
-              className="w-full px-3.5 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors resize-none"
+              placeholder="Add key context, requirements, or acceptance criteria..."
+              className="w-full px-4 py-2.5 text-sm bg-white dark:bg-slate-800/80 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all shadow-xs resize-none"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+          {/* Status Selection Buttons */}
+          <div>
+            <div className="flex items-center gap-1.5 mb-2">
+              <CheckCircle className="w-3.5 h-3.5 text-slate-400" />
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                 Status
               </label>
-              <select
-                disabled={loading}
-                value={status}
-                onChange={(e) => setStatus(e.target.value as TaskStatus)}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
-              >
-                <option value="TODO">To Do</option>
-                <option value="IN_PROGRESS">In Progress</option>
-                <option value="DONE">Done</option>
-              </select>
             </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                Priority
-              </label>
-              <select
-                disabled={loading}
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
-              >
-                <option value="LOW">Low</option>
-                <option value="MEDIUM">Medium</option>
-                <option value="HIGH">High</option>
-              </select>
+            <div className="grid grid-cols-3 gap-2.5">
+              {statusOptions.map((opt) => {
+                const isSelected = status === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setStatus(opt.value)}
+                    className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all ${
+                      isSelected
+                        ? 'border-indigo-600 dark:border-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-semibold shadow-xs ring-2 ring-indigo-500/20'
+                        : 'border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
+                    }`}
+                  >
+                    <span className="text-xs font-bold">{opt.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+          {/* Priority Selection */}
+          <div>
+            <div className="flex items-center gap-1.5 mb-2">
+              <Flag className="w-3.5 h-3.5 text-slate-400" />
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                Priority
+              </label>
+            </div>
+            <div className="grid grid-cols-3 gap-2.5">
+              {priorityOptions.map((opt) => {
+                const isSelected = priority === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setPriority(opt.value)}
+                    className={`p-2.5 rounded-xl border text-center text-xs font-bold transition-all uppercase tracking-wider ${
+                      isSelected
+                        ? 'border-indigo-600 dark:border-indigo-500 bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Footer Actions */}
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+              className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 rounded-xl transition-all shadow-md shadow-indigo-500/20 hover:shadow-indigo-500/30 active:scale-95 disabled:opacity-50"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               {taskToEdit ? 'Save Changes' : 'Create Task'}
