@@ -24,4 +24,8 @@ export class UpdateTaskDto {
     message: 'Priority must be one of: LOW, MEDIUM, HIGH',
   })
   priority?: TaskPriority;
+
+  @IsOptional()
+  @IsString({ message: 'expectedUpdatedAt must be an ISO date string' })
+  expectedUpdatedAt?: string;
 }

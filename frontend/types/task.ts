@@ -35,6 +35,7 @@ export interface UpdateTaskPayload {
   description?: string;
   status?: TaskStatus;
   priority?: TaskPriority;
+  expectedUpdatedAt?: string;
 }
 
 export interface QueryTasksParams {
